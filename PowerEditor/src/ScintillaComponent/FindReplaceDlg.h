@@ -18,6 +18,7 @@
 #pragma once
 
 #include <map>
+#include <regex>
 #include "FindReplaceDlg_rc.h"
 #include "ScintillaEditView.h"
 #include "DockingDlgInterface.h"
@@ -32,6 +33,8 @@
 #define FINDREPLACE_MAXLENGTH 2048
 
 #define FINDTEMPSTRING_MAXSIZE 1024*1024
+
+#define FINDREPLACE_DATE_BUFFER_SIZE 64
 
 enum DIALOG_TYPE {FIND_DLG, REPLACE_DLG, FINDINFILES_DLG, FINDINPROJECTS_DLG, MARK_DLG};
 
@@ -86,6 +89,35 @@ struct FindOption
 	bool _isProjectPanel_3 = false;
 	bool _dotMatchesNewline = false;
 	bool _isMatchLineNumber = false; // always false for main search
+
+	// Verify the date is in YYYY-MM-DD format with regex.
+	bool isValidDateFormat(const std::wstring& dateStr) const
+	{
+		const std::wregex dateRegex(LR"(^\d{4}-\d{2}-\d{2}$)");
+		return std::regex_match(dateStr, dateRegex);
+	}
+
+	bool isRealDate(const std::wstring& dateStr)
+	{
+		if (!isValidDateFormat(dateStr)) {
+			return false;
+		}
+		int year = std::stoi(dateStr.substr(0, 4));
+		int month = std::stoi(dateStr.substr(5, 2));
+		int day = std::stoi(dateStr.substr(8, 2));
+
+		// Check for valid number of days for each month.
+		const int daysInMonth[12] = {
+		31, 28, 31, 30, 31, 30,
+		31, 31, 30, 31, 30, 31
+		};
+
+		// Check for leap years.
+		bool isLeap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+		int maxDay = (month == 2 && isLeap) ? 29 : daysInMonth[month - 1];
+
+		return day >= 1 && day <= maxDay;
+	}
 };
 
 //This class contains generic search functions as static functions for easy access

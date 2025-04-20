@@ -2227,6 +2227,47 @@ intptr_t CALLBACK FindReplaceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARA
 					combo2ExtendedMode(IDFINDWHAT);
 					_options._str2Search = getTextFromCombo(hFindCombo);
 					updateCombo(IDFINDWHAT);
+					// MOD DATE VALIDATION
+					wchar_t startDateBuf[FINDREPLACE_DATE_BUFFER_SIZE]{};
+					::GetDlgItemText(_hSelf, IDC_START_DATE_PICKER, startDateBuf, (FINDREPLACE_DATE_BUFFER_SIZE - 1));
+					std::wstring userStartDate = startDateBuf;
+
+					if (!userStartDate.empty() && !_options.isRealDate(userStartDate))
+					{
+						MessageBox(_hSelf, L"Invalid start date format or non-existent date. Please use YYYY-MM-DD.", L"Invalid Date", MB_OK | MB_ICONWARNING);
+						::SetFocus(::GetDlgItem(_hSelf, IDC_START_DATE_PICKER));
+						return TRUE;
+					}
+					// MOD DATE VALIDATION — End Date
+					wchar_t endDateBuf[FINDREPLACE_DATE_BUFFER_SIZE]{};
+					::GetDlgItemText(_hSelf, IDC_END_DATE_PICKER, endDateBuf, (FINDREPLACE_DATE_BUFFER_SIZE);
+					std::wstring userEndDate = endDateBuf;
+
+					if (!userEndDate.empty() && !_options.isRealDate(userEndDate))
+					{
+						MessageBox(_hSelf, L"Invalid end date format or non-existent date. Please use YYYY-MM-DD.", L"Invalid Date", MB_OK | MB_ICONWARNING);
+						::SetFocus(::GetDlgItem(_hSelf, IDC_END_DATE_PICKER));
+						return TRUE;
+					}
+					// Compare Start and End Date
+					if (!userStartDate.empty() && !userEndDate.empty())
+					{
+						int startYear = std::stoi(userStartDate.substr(0, 4));
+						int startMonth = std::stoi(userStartDate.substr(5, 2));
+						int startDay = std::stoi(userStartDate.substr(8, 2));
+
+						int endYear = std::stoi(userEndDate.substr(0, 4));
+						int endMonth = std::stoi(userEndDate.substr(5, 2));
+						int endDay = std::stoi(userEndDate.substr(8, 2));
+
+						if (std::tie(startYear, startMonth, startDay) > std::tie(endYear, endMonth, endDay))
+						{
+							MessageBox(_hSelf, L"Start date must not be after end date.", L"Date Range Error", MB_OK | MB_ICONWARNING);
+							::SetFocus(::GetDlgItem(_hSelf, IDC_START_DATE_PICKER));
+							return TRUE;
+						}
+					}
+
 
 					if (_currentStatus == FINDINFILES_DLG)
 					{
@@ -4080,6 +4121,12 @@ void FindReplaceDlg::enableFindInFilesControls(bool isEnable, bool projectPanels
 	showFindDlgItem(IDD_FINDINFILES_PROJECT2_CHECK, isEnable && projectPanels);
 	showFindDlgItem(IDD_FINDINFILES_PROJECT3_CHECK, isEnable && projectPanels);
 	showFindDlgItem(IDD_FINDINFILES_SETDIRFROMDOC_BUTTON, isEnable && (!projectPanels));
+	// MOD 3
+	showFindDlgItem(IDC_DATE_SELECTION_GROUP, isEnable && (!projectPanels));
+	showFindDlgItem(IDC_START_DATE_LABEL, isEnable && (!projectPanels));
+	showFindDlgItem(IDC_START_DATE_PICKER, isEnable && (!projectPanels));
+	showFindDlgItem(IDC_END_DATE_LABEL, isEnable && (!projectPanels));
+	showFindDlgItem(IDC_END_DATE_PICKER, isEnable && (!projectPanels));
 }
 
 void FindReplaceDlg::getPatterns(vector<wstring> & patternVect)
@@ -4964,6 +5011,12 @@ void FindReplaceDlg::enableMarkFunc()
 	showFindDlgItem(IDD_FINDREPLACE_SWAP_BUTTON, false);
 	showFindDlgItem(IDREPLACEALL, false);
 	showFindDlgItem(IDC_REPLACE_OPENEDFILES, false);
+	// MOD 5
+	showFindDlgItem(IDC_DATE_SELECTION_GROUP, false);
+	showFindDlgItem(IDC_START_DATE_LABEL, false);
+	showFindDlgItem(IDC_START_DATE_PICKER, false);
+	showFindDlgItem(IDC_END_DATE_LABEL, false);
+	showFindDlgItem(IDC_END_DATE_PICKER, false);
 
 	// find controls to hide
 	showFindDlgItem(IDC_FINDALL_OPENEDFILES, false);
