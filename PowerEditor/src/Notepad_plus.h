@@ -47,6 +47,7 @@
 #include <iso646.h>
 #include <chrono>
 #include <atomic>
+#include <windows.h>
 
 extern std::chrono::steady_clock::time_point g_nppStartTimePoint;
 extern std::chrono::steady_clock::duration g_pluginsLoadingTime;
@@ -235,6 +236,7 @@ public:
 	void prepareBufferChangedDialog(Buffer * buffer);
 	void notifyBufferChanged(Buffer * buffer, int mask);
 	bool findInFinderFiles(FindersInfo *findInFolderInfo);
+	int  CompareSystemTime(const SYSTEMTIME& a, const SYSTEMTIME& b);
 
 	bool createFilelistForFiles(std::vector<std::wstring> & fileNames);
 	bool createFilelistForProjects(std::vector<std::wstring> & fileNames);
@@ -585,8 +587,8 @@ private:
 	bool replaceInOpenedFiles();
 	bool findInOpenedFiles();
 	bool findInCurrentFile(bool isEntireDoc);
-
-	void getMatchedFileNames(const wchar_t *dir, size_t level, const std::vector<std::wstring> & patterns, std::vector<std::wstring> & fileNames, bool isRecursive, bool isInHiddenDir);
+	void getMatchedFileNames(const wchar_t* dir, size_t level, const std::vector<std::wstring>& patterns, std::vector<std::wstring>& fileNames, bool isRecursive, bool isInHiddenDir);
+	void getMatchedFileNames(const wchar_t *dir, size_t level, const std::vector<std::wstring> & patterns, std::vector<std::wstring> & fileNames, bool isRecursive, bool isInHiddenDir, const SYSTEMTIME& startTime, const SYSTEMTIME& endTime);
 	void doSynScorll(HWND hW);
 	void setWorkingDir(const wchar_t *dir);
 	bool str2Cliboard(const std::wstring & str2cpy);

@@ -1806,7 +1806,61 @@ void Notepad_plus::removeDuplicateLines()
 
 }
 
-void Notepad_plus::getMatchedFileNames(const wchar_t *dir, size_t level, const vector<wstring> & patterns, vector<wstring> & fileNames, bool isRecursive, bool isInHiddenDir)
+int Notepad_plus::CompareSystemTime(const SYSTEMTIME& a, const SYSTEMTIME& b)
+{
+	FILETIME fa, fb;
+	::SystemTimeToFileTime(&a, &fa);
+	::SystemTimeToFileTime(&b, &fb);
+	return ::CompareFileTime(&fa, &fb);
+}
+
+void Notepad_plus::getMatchedFileNames(const wchar_t* dir, size_t level, const vector<wstring>& patterns, vector<wstring>& fileNames, bool isRecursive, bool isInHiddenDir)
+{
+	level++;
+
+	wstring dirFilter(dir);
+	dirFilter += L"*.*";
+
+	WIN32_FIND_DATA foundData;
+	HANDLE hFindFile = ::FindFirstFile(dirFilter.c_str(), &foundData);
+	if (hFindFile != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if (foundData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (!isInHiddenDir && (foundData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN))
+				{
+					// do nothing
+				}
+				else if (isRecursive)
+				{
+					if ((wcscmp(foundData.cFileName, L".") != 0) &&
+						(wcscmp(foundData.cFileName, L"..") != 0) &&
+						!matchInExcludeDirList(foundData.cFileName, patterns, level))
+					{
+						wstring pathDir(dir);
+						pathDir += foundData.cFileName;
+						pathDir += L"\\";
+						getMatchedFileNames(pathDir.c_str(), level, patterns, fileNames, isRecursive, isInHiddenDir);
+					}
+				}
+			}
+			else
+			{
+				if (matchInList(foundData.cFileName, patterns))
+				{
+					wstring pathFile(dir);
+					pathFile += foundData.cFileName;
+					fileNames.push_back(pathFile.c_str());
+				}
+			}
+		} while (::FindNextFile(hFindFile, &foundData));
+		::FindClose(hFindFile);
+	}
+}
+
+void Notepad_plus::getMatchedFileNames(const wchar_t *dir, size_t level, const vector<wstring> & patterns, vector<wstring> & fileNames, bool isRecursive, bool isInHiddenDir, const SYSTEMTIME &startTime, const SYSTEMTIME &endTime)
 {
 	level++;
 
@@ -1834,17 +1888,28 @@ void Notepad_plus::getMatchedFileNames(const wchar_t *dir, size_t level, const v
 						wstring pathDir(dir);
 						pathDir += foundData.cFileName;
 						pathDir += L"\\";
-						getMatchedFileNames(pathDir.c_str(), level, patterns, fileNames, isRecursive, isInHiddenDir);
+						getMatchedFileNames(pathDir.c_str(), level, patterns, fileNames, isRecursive, isInHiddenDir, startTime, endTime);
 					}
 				}
 			}
 			else
 			{
-				if (matchInList(foundData.cFileName, patterns))
+				// Convert FILETIME to SYSTEMTIME
+				SYSTEMTIME fileSysTime;
+				if (!::FileTimeToSystemTime(&foundData.ftLastWriteTime, &fileSysTime))
+					continue; // skip if conversion fails
+
+				// Check if fileSysTime is within [startTime, endTime]
+				if (CompareSystemTime(fileSysTime, startTime) >= 0 &&
+					CompareSystemTime(fileSysTime, endTime) <= 0)
 				{
-					wstring pathFile(dir);
-					pathFile += foundData.cFileName;
-					fileNames.push_back(pathFile.c_str());
+					// Only now check the pattern
+					if (matchInList(foundData.cFileName, patterns))
+					{
+						wstring pathFile(dir);
+						pathFile += foundData.cFileName;
+						fileNames.push_back(pathFile);
+					}
 				}
 			}
 		} while (::FindNextFile(hFindFile, &foundData));
@@ -1865,7 +1930,26 @@ bool Notepad_plus::createFilelistForFiles(vector<wstring> & fileNames)
 
 	bool isRecursive = _findReplaceDlg.isRecursive();
 	bool isInHiddenDir = _findReplaceDlg.isInHiddenDir();
-	getMatchedFileNames(dir2Search, 0, patterns2Match, fileNames, isRecursive, isInHiddenDir);
+
+	// Get the start and end date strings from the dialog
+	std::wstring startDateStr = _findReplaceDlg.getStartDate(); // format: YYYY-MM-DD
+	std::wstring endDateStr = _findReplaceDlg.getEndDate();     // format: YYYY-MM-DD
+
+	// Parse strings into SYSTEMTIME
+	SYSTEMTIME startTime = {};
+	SYSTEMTIME endTime = {};
+
+	startTime.wYear = static_cast<WORD>(std::stoi(startDateStr.substr(0, 4)));
+	startTime.wMonth = static_cast<WORD>(std::stoi(startDateStr.substr(5, 2)));
+	startTime.wDay = static_cast<WORD>(std::stoi(startDateStr.substr(8, 2)));
+
+	endTime.wYear = static_cast<WORD>(std::stoi(endDateStr.substr(0, 4)));
+	endTime.wMonth = static_cast<WORD>(std::stoi(endDateStr.substr(5, 2)));
+	endTime.wDay = static_cast<WORD>(std::stoi(endDateStr.substr(8, 2)));
+
+	// Updated call to pass in startTime and endTime
+
+	getMatchedFileNames(dir2Search, 0, patterns2Match, fileNames, isRecursive, isInHiddenDir, startTime, endTime);
 	return true;
 }
 

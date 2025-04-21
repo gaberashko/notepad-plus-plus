@@ -34,6 +34,7 @@
 
 #define FINDTEMPSTRING_MAXSIZE 1024*1024
 
+#define DATE_FORMAT_SIZE 11
 #define FINDREPLACE_DATE_BUFFER_SIZE 64
 
 enum DIALOG_TYPE {FIND_DLG, REPLACE_DLG, FINDINFILES_DLG, FINDINPROJECTS_DLG, MARK_DLG};
@@ -330,6 +331,8 @@ public :
 	};
 	const wchar_t * getDir2Search() const {return _env->_directory.c_str();};
 
+	std::wstring getStartDate();
+	std::wstring getEndDate();
 	void getPatterns(std::vector<std::wstring> & patternVect);
 	void getAndValidatePatterns(std::vector<std::wstring> & patternVect);
 

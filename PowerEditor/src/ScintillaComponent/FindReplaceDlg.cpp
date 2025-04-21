@@ -2240,7 +2240,7 @@ intptr_t CALLBACK FindReplaceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARA
 					}
 					// MOD DATE VALIDATION — End Date
 					wchar_t endDateBuf[FINDREPLACE_DATE_BUFFER_SIZE]{};
-					::GetDlgItemText(_hSelf, IDC_END_DATE_PICKER, endDateBuf, (FINDREPLACE_DATE_BUFFER_SIZE);
+					::GetDlgItemText(_hSelf, IDC_END_DATE_PICKER, endDateBuf, (FINDREPLACE_DATE_BUFFER_SIZE));
 					std::wstring userEndDate = endDateBuf;
 
 					if (!userEndDate.empty() && !_options.isRealDate(userEndDate))
@@ -2820,6 +2820,43 @@ intptr_t CALLBACK FindReplaceDlg::run_dlgProc(UINT message, WPARAM wParam, LPARA
 	}
 	return FALSE;
 }
+
+std::wstring FindReplaceDlg::getStartDate()
+{
+	// Retrieve the start date from the corresponding UI element, e.g., a combo box or text box
+	// This example assumes a ComboBox or TextBox holds the start date as a string in "YYYY-MM-DD" format
+	// Get the handle of the control (IDC_START_DATE_PICKER refers to the control ID)
+	HWND hwndStartDate = ::GetDlgItem(_hSelf, IDC_START_DATE_PICKER);
+
+	// Ensure the handle is valid, then retrieve the text
+	if (hwndStartDate)
+	{
+		wchar_t startDate[11];  // Assuming YYYY-MM-DD format
+		GetWindowText(hwndStartDate, startDate, ARRAYSIZE(startDate));
+		return std::wstring(startDate);
+	}
+
+	return L"";  // Return empty string if control is not found
+}
+
+std::wstring FindReplaceDlg::getEndDate()
+{
+	// Retrieve the end date from the corresponding UI element, e.g., a combo box or text box
+	// This example assumes a ComboBox or TextBox holds the end date as a string in "YYYY-MM-DD" format
+	// Get the handle of the control (IDC_START_DATE_PICKER refers to the control ID)
+	HWND hwndEndDate = ::GetDlgItem(_hSelf, IDC_END_DATE_PICKER);
+
+// Ensure the handle is valid, then retrieve the text
+if (hwndEndDate)
+{
+	wchar_t startDate[11];  // Assuming YYYY-MM-DD format
+	GetWindowText(hwndEndDate, startDate, ARRAYSIZE(startDate));
+	return std::wstring(startDate);
+}
+
+return L"";  // Return empty string if control is not found
+}
+
 
 // return value :
 // true  : the text2find is found
